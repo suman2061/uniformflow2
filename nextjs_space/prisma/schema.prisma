@@ -1,0 +1,751 @@
+generator client {
+    provider = "prisma-client-js"
+    binaryTargets = ["native", "linux-musl-arm64-openssl-3.0.x"]
+    output = "/home/ubuntu/worktrees/68a491a7d/uniformflow/nextjs_space/node_modules/.prisma/client"
+}
+
+datasource db {
+    provider = "postgresql"
+    url      = env("DATABASE_URL")
+}
+
+model Business {
+  id             String   @id @default(uuid())
+  name           String
+  code           String   @unique
+  address        String?
+  phone          String?
+  email          String?
+  logoUrl        String?
+  status         String   @default("active")
+  isDemoData     Boolean  @default(false)
+  nextStudentSeq Int      @default(0)
+  nextOrderSeq   Int      @default(0)
+  nextPoSeq      Int      @default(0)
+  nextChallanSeq Int      @default(0)
+  nextInvoiceSeq Int      @default(0)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  users           User[]
+  schools         School[]
+  students        Student[]
+  enrollments     Enrollment[]
+  products        Product[]
+  schoolProducts  SchoolProduct[]
+  academicYears   AcademicYear[]
+  schoolClasses   SchoolClass[]
+  schoolDivisions SchoolDivision[]
+  auditLogs       AuditLog[]
+  measurementSubmissions MeasurementSubmission[]
+  measurements           Measurement[]
+  measurementHistories   MeasurementHistory[]
+  subscription           Subscription?
+}
+
+model User {
+  id           String   @id @default(uuid())
+  businessId   String?
+  email        String   @unique
+  passwordHash String
+  name         String
+  phone        String?
+  role         String
+  permissions  Json?
+  active       Boolean  @default(true)
+  isDemoData   Boolean  @default(false)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  business Business? @relation(fields: [businessId], references: [id])
+  verifiedMeasurements MeasurementSubmission[] @relation("MeasurementVerifier")
+
+  @@index([businessId])
+}
+
+model AuditLog {
+  id         String   @id @default(uuid())
+  businessId String?
+  userId     String
+  userName   String
+  action     String
+  entityType String
+  entityId   String?
+  summary    String
+  changes    Json?
+  ip         String?
+  createdAt  DateTime @default(now())
+
+  business Business? @relation(fields: [businessId], references: [id])
+
+  @@index([businessId, entityType, createdAt])
+  @@index([businessId, createdAt])
+  @@index([userId])
+}
+
+model School {
+  id             String   @id @default(uuid())
+  businessId     String
+  name           String
+  code           String
+  address        String?
+  phone          String?
+  email          String?
+  contactPerson  String?
+  billingName    String?
+  billingAddress String?
+  gstin          String?
+  logoUrl        String?
+  active         Boolean  @default(true)
+  isDemoData     Boolean  @default(false)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  business        Business         @relation(fields: [businessId], references: [id])
+  academicYears   AcademicYear[]
+  schoolClasses   SchoolClass[]
+  schoolDivisions SchoolDivision[]
+  students        Student[]
+  enrollments     Enrollment[]
+  schoolProducts  SchoolProduct[]
+  measurementSubmissions MeasurementSubmission[]
+
+  @@unique([businessId, code])
+  @@index([businessId, name])
+  @@index([businessId, active])
+}
+
+model AcademicYear {
+  id                     String    @id @default(uuid())
+  businessId             String
+  schoolId               String
+  name                   String
+  startsOn               DateTime?
+  endsOn                 DateTime?
+  isActive               Boolean   @default(true)
+  measurementWindowStart DateTime?
+  measurementWindowEnd   DateTime?
+  measurementSettings    Json?
+  isDemoData             Boolean   @default(false)
+  createdAt              DateTime  @default(now())
+  updatedAt              DateTime  @updatedAt
+
+  business       Business       @relation(fields: [businessId], references: [id])
+  school         School         @relation(fields: [schoolId], references: [id])
+  enrollments    Enrollment[]
+  schoolProducts SchoolProduct[]
+  measurementSubmissions MeasurementSubmission[]
+  measurements           Measurement[]
+
+  @@unique([businessId, schoolId, name])
+  @@index([schoolId, isActive])
+  @@index([businessId])
+}
+
+model SchoolClass {
+  id         String   @id @default(uuid())
+  businessId String
+  schoolId   String
+  name       String
+  sortOrder  Int      @default(0)
+  active     Boolean  @default(true)
+  isDemoData Boolean  @default(false)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  business    Business     @relation(fields: [businessId], references: [id])
+  school      School       @relation(fields: [schoolId], references: [id])
+  enrollments Enrollment[]
+
+  @@unique([businessId, schoolId, name])
+  @@index([businessId, schoolId])
+}
+
+model SchoolDivision {
+  id         String   @id @default(uuid())
+  businessId String
+  schoolId   String
+  name       String
+  sortOrder  Int      @default(0)
+  active     Boolean  @default(true)
+  isDemoData Boolean  @default(false)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  business    Business     @relation(fields: [businessId], references: [id])
+  school      School       @relation(fields: [schoolId], references: [id])
+  enrollments Enrollment[]
+
+  @@unique([businessId, schoolId, name])
+  @@index([businessId, schoolId])
+}
+
+model Student {
+  id              String   @id @default(uuid())
+  businessId      String
+  schoolId        String
+  permanentId     String
+  name            String
+  gender          String?
+  uniformCategory String?
+  parentName      String?
+  parentPhone     String?
+  parentEmail     String?
+  status          String   @default("active")
+  notes           String?
+  isDemoData      Boolean  @default(false)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  business    Business     @relation(fields: [businessId], references: [id])
+  school      School       @relation(fields: [schoolId], references: [id])
+  enrollments Enrollment[]
+  measurementSubmissions MeasurementSubmission[]
+  measurements           Measurement[]
+
+  @@unique([businessId, permanentId])
+  @@index([businessId, schoolId])
+  @@index([businessId, name])
+  @@index([businessId, status])
+}
+
+model Enrollment {
+  id             String   @id @default(uuid())
+  businessId     String
+  studentId      String
+  schoolId       String
+  academicYearId String
+  classId        String
+  divisionId     String?
+  rollNumber     String?
+  status         String   @default("enrolled")
+  isDemoData     Boolean  @default(false)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  business     Business        @relation(fields: [businessId], references: [id])
+  student      Student         @relation(fields: [studentId], references: [id])
+  school       School          @relation(fields: [schoolId], references: [id])
+  academicYear AcademicYear    @relation(fields: [academicYearId], references: [id])
+  class        SchoolClass     @relation(fields: [classId], references: [id])
+  division     SchoolDivision? @relation(fields: [divisionId], references: [id])
+  measurementSubmissions MeasurementSubmission[]
+
+  @@unique([businessId, academicYearId, studentId])
+  @@index([businessId, schoolId])
+  @@index([businessId, studentId])
+  @@index([academicYearId])
+  @@index([classId])
+  @@index([divisionId])
+}
+
+model Product {
+  id                String   @id @default(uuid())
+  businessId        String
+  name              String
+  sku               String
+  description       String?
+  category          String
+  fabricType        String?
+  color             String?
+  variants          Json?
+  unit              String   @default("PCS")
+  costPrice         Decimal  @db.Decimal(12, 2)
+  sellingPrice      Decimal  @db.Decimal(12, 2)
+  imageUrl          String?
+  thumbnailUrl      String?
+  hasStandardSize   Boolean  @default(false)
+  sizeChart         Json?
+  measurementFields Json?
+  isActive          Boolean  @default(true)
+  isDemoData        Boolean  @default(false)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  business       Business       @relation(fields: [businessId], references: [id])
+  schoolProducts SchoolProduct[]
+  measurements   Measurement[]
+
+  @@unique([businessId, sku])
+  @@index([businessId, category])
+  @@index([businessId, isActive])
+}
+
+model SchoolProduct {
+  id                    String   @id @default(uuid())
+  businessId            String
+  schoolId              String
+  academicYearId        String
+  productId             String
+  priceOverride         Decimal? @db.Decimal(12, 2)
+  applicableClassIds    Json?
+  applicableDivisionIds Json?
+  uniformCategories     Json?
+  isMandatory           Boolean  @default(true)
+  isActive              Boolean  @default(true)
+  isDemoData            Boolean  @default(false)
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  business     Business     @relation(fields: [businessId], references: [id])
+  school       School       @relation(fields: [schoolId], references: [id])
+  academicYear AcademicYear @relation(fields: [academicYearId], references: [id])
+  product      Product      @relation(fields: [productId], references: [id])
+
+  @@unique([businessId, schoolId, academicYearId, productId])
+  @@index([businessId, schoolId])
+  @@index([businessId, productId])
+  @@index([academicYearId])
+}
+
+// ============================================================
+// PHASE 2 — MEASUREMENT COLLECTION
+// ============================================================
+
+model MeasurementSubmission {
+  id              String    @id @default(uuid())
+  businessId      String
+  schoolId        String
+  academicYearId  String
+  studentId       String
+  enrollmentId    String?
+  tokenHash       String?   @unique
+  tokenExpiresAt  DateTime?
+  tokenRevoked    Boolean   @default(false)
+  status          String    @default("LINK_NOT_GENERATED")
+  submittedAt     DateTime?
+  verifiedById    String?
+  verifiedAt      DateTime?
+  rejectionReason String?
+  submissionData  Json?
+  lastSentAt      DateTime?
+  sendCount       Int       @default(0)
+  isDemoData      Boolean   @default(false)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  business     Business      @relation(fields: [businessId], references: [id])
+  school       School        @relation(fields: [schoolId], references: [id])
+  academicYear AcademicYear  @relation(fields: [academicYearId], references: [id])
+  student      Student       @relation(fields: [studentId], references: [id])
+  enrollment   Enrollment?   @relation(fields: [enrollmentId], references: [id])
+  verifiedBy   User?         @relation("MeasurementVerifier", fields: [verifiedById], references: [id])
+  measurements Measurement[]
+
+  @@unique([businessId, academicYearId, studentId])
+  @@index([businessId, schoolId, status])
+  @@index([businessId, status])
+  @@index([academicYearId])
+}
+
+model Measurement {
+  id             String   @id @default(uuid())
+  businessId     String
+  studentId      String
+  academicYearId String
+  productId      String
+  submissionId   String?
+  source         String   @default("SELF_SERVICE")
+  size           String?
+  fields         Json?
+  notes          String?
+  isDemoData     Boolean  @default(false)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  business     Business               @relation(fields: [businessId], references: [id])
+  student      Student                @relation(fields: [studentId], references: [id])
+  academicYear AcademicYear           @relation(fields: [academicYearId], references: [id])
+  product      Product                @relation(fields: [productId], references: [id])
+  submission   MeasurementSubmission? @relation(fields: [submissionId], references: [id])
+  history      MeasurementHistory[]
+
+  @@unique([businessId, studentId, academicYearId, productId])
+  @@index([businessId, academicYearId])
+  @@index([studentId])
+  @@index([productId])
+}
+
+model MeasurementHistory {
+  id            String   @id @default(uuid())
+  businessId    String
+  measurementId String
+  changedById   String?
+  changedByName String
+  changeType    String
+  before        Json?
+  after         Json?
+  reason        String?
+  createdAt     DateTime @default(now())
+
+  business    Business    @relation(fields: [businessId], references: [id])
+  measurement Measurement @relation(fields: [measurementId], references: [id])
+
+  @@index([businessId, measurementId])
+}
+
+// ============================================================
+// PHASE 3 — BUSINESS OPERATIONS
+// ============================================================
+
+model Order {
+  id                   String    @id @default(uuid())
+  businessId           String
+  orderNumber          String
+  schoolId             String
+  academicYearId       String
+  studentId            String?
+  orderType            String    @default("SCHOOL")
+  status               String    @default("REQUIREMENT_COLLECTION")
+  orderDate            DateTime  @default(now())
+  expectedDeliveryDate DateTime?
+  notes                String?
+  subtotal             Decimal   @default(0) @db.Decimal(12, 2)
+  discountTotal        Decimal   @default(0) @db.Decimal(12, 2)
+  taxTotal             Decimal   @default(0) @db.Decimal(12, 2)
+  grandTotal           Decimal   @default(0) @db.Decimal(12, 2)
+  statusHistory        Json?
+  createdById          String?
+  isDemoData           Boolean   @default(false)
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+
+  lines OrderLine[]
+
+  @@unique([businessId, orderNumber])
+  @@index([businessId, schoolId])
+  @@index([businessId, academicYearId])
+  @@index([businessId, status])
+  @@index([studentId])
+}
+
+model OrderLine {
+  id           String   @id @default(uuid())
+  businessId   String
+  orderId      String
+  productId    String
+  productName  String
+  size         String   @default("")
+  quantity     Int      @default(0)
+  approvedQty  Int      @default(0)
+  cancelledQty Int      @default(0)
+  deliveredQty Int      @default(0)
+  unitPrice    Decimal  @db.Decimal(12, 2)
+  discount     Decimal  @default(0) @db.Decimal(12, 2)
+  taxRate      Decimal  @default(0) @db.Decimal(5, 2)
+  taxAmount    Decimal  @default(0) @db.Decimal(12, 2)
+  lineTotal    Decimal  @default(0) @db.Decimal(12, 2)
+  isDemoData   Boolean  @default(false)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@unique([orderId, productId, size])
+  @@index([businessId])
+  @@index([productId])
+}
+
+model FabricRequirement {
+  id                 String   @id @default(uuid())
+  businessId         String
+  academicYearId     String
+  productId          String
+  productName        String
+  size               String   @default("")
+  totalQuantity      Int      @default(0)
+  consumptionPerUnit Decimal  @default(0) @db.Decimal(10, 3)
+  wastagePercent     Decimal  @default(0) @db.Decimal(5, 2)
+  fabricType         String?
+  fabricRequired     Decimal  @default(0) @db.Decimal(12, 3)
+  manualAdjustment   Decimal  @default(0) @db.Decimal(12, 3)
+  adjustmentReason   String?
+  isDemoData         Boolean  @default(false)
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  @@index([businessId, academicYearId])
+  @@index([productId])
+}
+
+model PurchaseOrder {
+  id                   String    @id @default(uuid())
+  businessId           String
+  poNumber             String
+  supplierName         String
+  supplierContact      String?
+  fabricType           String?
+  quantity             Decimal   @default(0) @db.Decimal(12, 3)
+  unit                 String    @default("METERS")
+  unitCost             Decimal   @default(0) @db.Decimal(12, 2)
+  totalCost            Decimal   @default(0) @db.Decimal(12, 2)
+  receivedQty          Decimal   @default(0) @db.Decimal(12, 3)
+  status               String    @default("DRAFT")
+  orderDate            DateTime  @default(now())
+  expectedDeliveryDate DateTime?
+  notes                String?
+  createdById          String?
+  isDemoData           Boolean   @default(false)
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+
+  receipts FabricReceipt[]
+
+  @@unique([businessId, poNumber])
+  @@index([businessId, status])
+}
+
+model FabricReceipt {
+  id              String   @id @default(uuid())
+  businessId      String
+  purchaseOrderId String
+  receivedQty     Decimal  @default(0) @db.Decimal(12, 3)
+  shortageQty     Decimal  @default(0) @db.Decimal(12, 3)
+  receivedDate    DateTime @default(now())
+  notes           String?
+  receivedById    String?
+  isDemoData      Boolean  @default(false)
+  createdAt       DateTime @default(now())
+
+  purchaseOrder PurchaseOrder @relation(fields: [purchaseOrderId], references: [id], onDelete: Cascade)
+
+  @@index([businessId])
+  @@index([purchaseOrderId])
+}
+
+model ProductionBatch {
+  id                String    @id @default(uuid())
+  businessId        String
+  academicYearId    String
+  productId         String
+  productName       String
+  size              String    @default("")
+  plannedQty        Int       @default(0)
+  cuttingQty        Int       @default(0)
+  stitchingQty      Int       @default(0)
+  completedQty      Int       @default(0)
+  defectiveQty      Int       @default(0)
+  reworkQty         Int       @default(0)
+  status            String    @default("PLANNED")
+  qcStatus          String?
+  worker            String?
+  vendor            String?
+  plannedCompletion DateTime?
+  actualCompletion  DateTime?
+  notes             String?
+  isDemoData        Boolean   @default(false)
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  @@index([businessId, academicYearId])
+  @@index([businessId, status])
+  @@index([productId])
+}
+
+model Delivery {
+  id             String   @id @default(uuid())
+  businessId     String
+  challanNumber  String
+  schoolId       String
+  academicYearId String
+  studentId      String?
+  orderId        String?
+  recipientName  String?
+  status         String   @default("PENDING")
+  deliveryDate   DateTime @default(now())
+  proofFileUrl   String?
+  notes          String?
+  createdById    String?
+  isDemoData     Boolean  @default(false)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  lines DeliveryLine[]
+
+  @@unique([businessId, challanNumber])
+  @@index([businessId, schoolId])
+  @@index([businessId, status])
+  @@index([orderId])
+}
+
+model DeliveryLine {
+  id           String   @id @default(uuid())
+  businessId   String
+  deliveryId   String
+  productId    String
+  productName  String
+  size         String   @default("")
+  qtyRequired  Int      @default(0)
+  qtyDelivered Int      @default(0)
+  qtyReturned  Int      @default(0)
+  isDemoData   Boolean  @default(false)
+  createdAt    DateTime @default(now())
+
+  delivery Delivery @relation(fields: [deliveryId], references: [id], onDelete: Cascade)
+
+  @@index([businessId])
+  @@index([productId])
+}
+
+model Invoice {
+  id             String    @id @default(uuid())
+  businessId     String
+  invoiceNumber  String
+  schoolId       String
+  academicYearId String
+  invoiceDate    DateTime  @default(now())
+  dueDate        DateTime?
+  subtotal       Decimal   @default(0) @db.Decimal(12, 2)
+  discountTotal  Decimal   @default(0) @db.Decimal(12, 2)
+  taxTotal       Decimal   @default(0) @db.Decimal(12, 2)
+  grandTotal     Decimal   @default(0) @db.Decimal(12, 2)
+  status         String    @default("DRAFT")
+  notes          String?
+  createdById    String?
+  isDemoData     Boolean   @default(false)
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  lines       InvoiceLine[]
+  allocations PaymentAllocation[]
+
+  @@unique([businessId, invoiceNumber])
+  @@index([businessId, schoolId])
+  @@index([businessId, status])
+}
+
+model InvoiceLine {
+  id          String  @id @default(uuid())
+  businessId  String
+  invoiceId   String
+  description String
+  productId   String?
+  quantity    Int     @default(0)
+  unitPrice   Decimal @default(0) @db.Decimal(12, 2)
+  discount    Decimal @default(0) @db.Decimal(12, 2)
+  taxRate     Decimal @default(0) @db.Decimal(5, 2)
+  taxAmount   Decimal @default(0) @db.Decimal(12, 2)
+  lineTotal   Decimal @default(0) @db.Decimal(12, 2)
+  isDemoData  Boolean @default(false)
+
+  invoice Invoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+
+  @@index([businessId])
+  @@index([invoiceId])
+}
+
+model Payment {
+  id             String   @id @default(uuid())
+  businessId     String
+  schoolId       String
+  invoiceId      String?
+  type           String   @default("PARTIAL")
+  method         String   @default("CASH")
+  amount         Decimal  @db.Decimal(12, 2)
+  transactionRef String?
+  paymentDate    DateTime @default(now())
+  notes          String?
+  receivedById   String?
+  isDemoData     Boolean  @default(false)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  allocations PaymentAllocation[]
+
+  @@index([businessId, schoolId])
+  @@index([invoiceId])
+}
+
+model PaymentAllocation {
+  id         String   @id @default(uuid())
+  businessId String
+  paymentId  String
+  invoiceId  String?
+  studentId  String?
+  amount     Decimal  @db.Decimal(12, 2)
+  isDemoData Boolean  @default(false)
+  createdAt  DateTime @default(now())
+
+  payment Payment  @relation(fields: [paymentId], references: [id], onDelete: Cascade)
+  invoice Invoice? @relation(fields: [invoiceId], references: [id])
+
+  @@index([businessId])
+  @@index([paymentId])
+  @@index([invoiceId])
+  @@index([studentId])
+}
+
+model Notification {
+  id              String    @id @default(uuid())
+  businessId      String
+  recipientUserId String?
+  type            String
+  title           String
+  body            String?
+  payload         Json?
+  readAt          DateTime?
+  isDemoData      Boolean   @default(false)
+  createdAt       DateTime  @default(now())
+
+  @@index([businessId, recipientUserId])
+  @@index([businessId, createdAt])
+}
+
+// ============================================================
+// PHASE 4 — SAAS MONETIZATION
+// ============================================================
+
+model Plan {
+  id           String   @id @default(uuid())
+  name         String   @unique
+  slug         String   @unique
+  monthlyPrice Decimal  @default(0) @db.Decimal(12, 2)
+  annualPrice  Decimal  @default(0) @db.Decimal(12, 2)
+  trialDays    Int      @default(14)
+  maxSchools   Int      @default(0)
+  maxUsers     Int      @default(0)
+  maxStudents  Int      @default(0)
+  storageMb    Int      @default(0)
+  features     Json?
+  sortOrder    Int      @default(0)
+  active       Boolean  @default(true)
+  isDemoData   Boolean  @default(false)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  subscriptions Subscription[]
+}
+
+model Subscription {
+  id               String    @id @default(uuid())
+  businessId       String    @unique
+  business         Business  @relation(fields: [businessId], references: [id])
+  planId           String
+  status           String    @default("trial")
+  billingCycle     String    @default("monthly")
+  trialEndsAt      DateTime?
+  currentPeriodEnd DateTime?
+  billingProvider  String?
+  billingRef       String?
+  cancelAtPeriodEnd Boolean  @default(false)
+  isDemoData       Boolean   @default(false)
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  plan Plan @relation(fields: [planId], references: [id])
+
+  @@index([status])
+  @@index([planId])
+}
+
+model BillingEvent {
+  id          String   @id @default(uuid())
+  businessId  String?
+  provider    String
+  eventType   String
+  externalId  String   @unique
+  payload     Json?
+  processedAt DateTime @default(now())
+
+  @@index([businessId])
+}
